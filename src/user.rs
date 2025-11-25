@@ -53,16 +53,16 @@ impl fmt::Display for UserInfo {
         let num_chars = self.user_name.len();
         let num_padding = 1;
         let width = num_chars + num_padding * 2;
-        writeln!(f, "┌{}┐", "-".repeat(width))?;
-        writeln!(f, "|{:^width$}|", self.user_name, width = width)?;
-        writeln!(f, "└{}┘", "-".repeat(width))?;
+        writeln!(f, "┌{}┐", "─".repeat(width))?;
+        writeln!(f, "│{:^width$}│", self.user_name, width = width)?;
+        writeln!(f, "└{}┘", "─".repeat(width))?;
         // print user groups
-        writeln!(f, "┌{}┐", "-".repeat(width))?;
-        writeln!(f, "|{:^width$}|", "Groups", width = width)?;
-        writeln!(f, "|{}|", "-".repeat(width))?;
+        writeln!(f, "┌{}┐", "─".repeat(width))?;
+        writeln!(f, "│{:^width$}│", "Groups", width = width)?;
+        writeln!(f, "│{}│", "─".repeat(width))?;
         for group in &self.user_groups {
-            writeln!(f, "|{:<width$}|", group, width = width)?;
+            writeln!(f, "│{:<width$}│", group, width = width)?;
         }
-        writeln!(f, "└{}┘", "-".repeat(width))
+        writeln!(f, "└{}┘", "─".repeat(width))
     }
 }
