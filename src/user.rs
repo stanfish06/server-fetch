@@ -8,6 +8,7 @@ use std::fs;
 use std::str;
 use std::ffi::CStr;
 use std::ffi::c_void;
+use chrono::{DateTime, Utc, TimeZone};
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -76,6 +77,9 @@ impl fmt::Display for UserInfo {
             writeln!(f, "│{:<width$}│", group, width = width)?;
         }
         writeln!(f, "└{}┘", "─".repeat(width))?;
+        writeln!(f, "┌{}┐", "─".repeat(41))?;
+        writeln!(f, "│{:^width$}│", "Recent logins", width = 41)?;
+        writeln!(f, "│{}│", "─".repeat(41))?;
         // login
         unsafe{ 
             let mut entries: *mut Entry = std::ptr::null_mut();
@@ -85,14 +89,34 @@ impl fmt::Display for UserInfo {
                 entries,
             };
             get_login_info(&mut data as *mut wtmpdb_data);
+            let mut ct: usize = 0;
             for i in 0..data.count {
                 let entry = *data.entries.offset(i as isize);
                 if !entry.user.is_null() {
                     let _user = CStr::from_ptr(entry.user as *const i8);
                     let user_name: &str = _user.to_str().unwrap();
-                    writeln!(f, "{}", user_name)?;
+                    // only show 5 most recent logins for now
+                    if user_name == self.user_name {
+                        if ct < 5 {
+                            let login_time = (entry.login / 1_000_000) as i64;
+                            let logout_time = (entry.logout / 1_000_000) as i64;
+                            let login_time_h = Utc.timestamp_opt(login_time, 0).unwrap().format("%Y-%m-%d %H:%M:%S");
+                            // 0 means still logged in, UINT64_MAX - 1 means crash
+                            if logout_time == 0 {
+                                writeln!(f, "│{:<width$}│", format!("{} - active", login_time_h), width=41)?;
+                            } else if entry.logout == u64::MAX - 1 {
+                                writeln!(f, "│{:<width$}│", format!("{} - crash", login_time_h), width=41)?;
+                            } else {
+                                let logout_time_h = Utc.timestamp_opt(logout_time, 0).unwrap().format("%Y-%m-%d %H:%M:%S");
+                                writeln!(f, "│{:<width$}│", format!("{} - {}", login_time_h, logout_time_h), width=41)?;
+                            }
+                        }
+                        ct = ct + 1;
+                    }
                 }
             }
+            writeln!(f, "│{}│", "─".repeat(41))?;
+            writeln!(f, "│{:^width$}│", format!("{} total logins", ct), width=41)?;
 
             for i in 0..data.count {
                 let entry = *data.entries.offset(i as isize);
@@ -105,6 +129,7 @@ impl fmt::Display for UserInfo {
                 free(data.entries as *mut c_void);
             }
         };
-        writeln!(f, "{}", 0)
+        writeln!(f, "└{}┘", "─".repeat(41))?;
+        Ok(())
     }
 }
