@@ -6,6 +6,8 @@ use std::env;
 use std::fmt;
 use std::fs;
 use std::str;
+use std::ffi::CStr;
+use std::ffi::c_void;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -75,7 +77,34 @@ impl fmt::Display for UserInfo {
         }
         writeln!(f, "└{}┘", "─".repeat(width))?;
         // login
-        unsafe{ get_login_info() };
+        unsafe{ 
+            let mut entries: *mut Entry = std::ptr::null_mut();
+            let mut data = wtmpdb_data {
+                count: 0,
+                capacity: 0,
+                entries,
+            };
+            get_login_info(&mut data as *mut wtmpdb_data);
+            for i in 0..data.count {
+                let entry = *data.entries.offset(i as isize);
+                if !entry.user.is_null() {
+                    let _user = CStr::from_ptr(entry.user as *const i8);
+                    let user_name: &str = _user.to_str().unwrap();
+                    writeln!(f, "{}", user_name)?;
+                }
+            }
+
+            for i in 0..data.count {
+                let entry = *data.entries.offset(i as isize);
+                if !entry.user.is_null() {
+                    free(entry.user as *mut c_void);
+                }
+            }
+
+            if !data.entries.is_null() {
+                free(data.entries as *mut c_void);
+            }
+        };
         writeln!(f, "{}", 0)
     }
 }
