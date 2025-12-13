@@ -1,6 +1,13 @@
+#![allow(non_upper_case_globals)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
 use std::env;
 use std::fmt;
 use std::fs;
+use std::str;
+
+include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 /*---------------
 user information:
@@ -13,9 +20,11 @@ user information:
 - memory
 - ...
 ---------------*/
+// wtmpdb_get_boottime
 pub struct UserInfo {
     user_name: String,
-    user_groups: Vec<String>
+    user_groups: Vec<String>,
+    boot_time: u64
 }
 
 impl UserInfo {
@@ -40,7 +49,8 @@ impl UserInfo {
         let user_groups = Vec::new();
         let mut user_info = UserInfo {
             user_name: user_name,
-            user_groups: user_groups
+            user_groups: user_groups,
+            boot_time: 0
         };
         user_info.fetch_groups();
         user_info
@@ -63,6 +73,9 @@ impl fmt::Display for UserInfo {
         for group in &self.user_groups {
             writeln!(f, "│{:<width$}│", group, width = width)?;
         }
-        writeln!(f, "└{}┘", "─".repeat(width))
+        writeln!(f, "└{}┘", "─".repeat(width))?;
+        // login
+        unsafe{ get_login_info() };
+        writeln!(f, "{}", 0)
     }
 }
