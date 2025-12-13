@@ -3,8 +3,19 @@
 #include <wtmpdb.h>
 #include <stdlib.h>
 
+// - Column 0: ID
+// - Column 1: Type
+// - Column 2: User
+// - Column 3: Login = 1765612903246661 (login timestamp in microseconds)
+// - Column 4: Logout = NULL (logout timestamp, NULL if still logged in)
+// - Column 5: TTY
+// - Column 6: RemoteHost
+// - Column 7: Service
 struct Entry {
     char *user;
+    uint64_t login;
+    uint64_t logout;
+    char *tty;
 };
 
 typedef struct wtmpdb_data {

@@ -14,7 +14,13 @@ int callback_login(void *user_data, int argc, char **argv, char **azColName) {
   }
 
   struct Entry entry;
-  entry.user = strdup(argv[0]);
+  entry.user = strdup(argv[2]);
+  entry.login = strtoull(argv[3], NULL, 10);
+  if (argv[4] != NULL) {
+    entry.logout = strtoull(argv[4], NULL, 10);
+  } else {
+    entry.logout = 0;
+  }
   data->entries[data->count++] = entry;
   return 0;
 }
