@@ -6,8 +6,10 @@ fn main() {
     println!("cargo:rerun-if-changed=bindings.c");
     println!("cargo:rerun-if-changed=libbindings.a");
     
-    println!("cargo:rustc-link-search=/usr/lib");
-    println!("cargo:rustc-link-lib=wtmpdb");
+    if cfg!(target_os = "linux") {
+        println!("cargo:rustc-link-search=/usr/lib");
+        println!("cargo:rustc-link-lib=wtmpdb");
+    } 
     
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     println!("cargo:rustc-link-search=native={}", manifest_dir);

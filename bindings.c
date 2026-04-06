@@ -3,10 +3,27 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <wtmpdb.h>
 
-int callback_login(void *user_data, int argc, char **argv, char **azColName) {
-  wtmpdb_data *data = (wtmpdb_data *)user_data;
+#ifdef __APPLE__
+void get_login_info(login_data* data) {
+    setutxent_wtmp(0);
+    struct utmpx* utmpx_entry;
+    while ((utmpx_entry = getutxent_wtmp()) != NULL) {
+      if (data->count >= data->capacity) {
+        data->capacity = data->capacity == 0 ? 10 : data->capacity * 2;
+        data->entries =
+            realloc(data->entries, data->capacity * sizeof(struct Entry));
+      }
+      struct Entry entry;
+      entry.user = strdup(utmpx_entry->ut_user);
+      entry.login = utmpx_entry->ut_tv.tv_sec*1000000;
+      entry.logout = 0;
+      data->entries[data->count++] = entry;
+    }
+}
+#else
+int callback_login_wtmpdb(void *user_data, int argc, char **argv, char **azColName) {
+  login_data *data = (login_data *)user_data;
   
   if (data->count >= data->capacity) {
     data->capacity = data->capacity == 0 ? 10 : data->capacity * 2;
@@ -26,9 +43,9 @@ int callback_login(void *user_data, int argc, char **argv, char **azColName) {
   return 0;
 }
 
-void get_login_info(wtmpdb_data *data) {
+void get_login_info(login_data *data) {
   char *error = NULL;
-  wtmpdb_read_all_v2(_PATH_WTMPDB, callback_login, data, &error);
+  wtmpdb_read_all_v2(_PATH_WTMPDB, callback_login_wtmpdb, data, &error);
   if (error) {
     free(error);
   };
@@ -45,3 +62,4 @@ void get_login_info(wtmpdb_data *data) {
     }
   }
 }
+#endif

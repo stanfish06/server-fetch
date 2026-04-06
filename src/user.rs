@@ -8,7 +8,7 @@ use std::fs;
 use std::str;
 use std::ffi::CStr;
 use std::ffi::c_void;
-use chrono::{DateTime, Utc, TimeZone};
+use chrono::{DateTime, Local, TimeZone};
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -33,6 +33,7 @@ pub struct UserInfo {
 impl UserInfo {
     fn fetch_groups(&mut self) {
         let user_name = &self.user_name;
+        // use grp.h instead, should be more cross-plat
         let file_content = fs::read_to_string("/etc/group").unwrap();
         let mut user_groups: Vec<String> = Vec::new();
         for line in file_content.lines() {
@@ -83,12 +84,12 @@ impl fmt::Display for UserInfo {
         // login
         unsafe{ 
             let mut entries: *mut Entry = std::ptr::null_mut();
-            let mut data = wtmpdb_data {
+            let mut data = login_data {
                 count: 0,
                 capacity: 0,
                 entries,
             };
-            get_login_info(&mut data as *mut wtmpdb_data);
+            get_login_info(&mut data as *mut login_data);
             let mut ct: usize = 0;
             for i in 0..data.count {
                 let entry = *data.entries.offset(i as isize);
@@ -100,14 +101,14 @@ impl fmt::Display for UserInfo {
                         if ct < 5 {
                             let login_time = (entry.login / 1_000_000) as i64;
                             let logout_time = (entry.logout / 1_000_000) as i64;
-                            let login_time_h = Utc.timestamp_opt(login_time, 0).unwrap().format("%Y-%m-%d %H:%M:%S");
+                            let login_time_h = Local.timestamp_opt(login_time, 0).unwrap().format("%Y-%m-%d %H:%M:%S");
                             // 0 means still logged in, UINT64_MAX - 1 means crash
                             if logout_time == 0 {
                                 writeln!(f, "│{:<width$}│", format!("{} - active", login_time_h), width=41)?;
                             } else if entry.logout == u64::MAX - 1 {
                                 writeln!(f, "│{:<width$}│", format!("{} - crash", login_time_h), width=41)?;
                             } else {
-                                let logout_time_h = Utc.timestamp_opt(logout_time, 0).unwrap().format("%Y-%m-%d %H:%M:%S");
+                                let logout_time_h = Local.timestamp_opt(logout_time, 0).unwrap().format("%Y-%m-%d %H:%M:%S");
                                 writeln!(f, "│{:<width$}│", format!("{} - {}", login_time_h, logout_time_h), width=41)?;
                             }
                         }
@@ -130,6 +131,13 @@ impl fmt::Display for UserInfo {
             }
         };
         writeln!(f, "└{}┘", "─".repeat(41))?;
+        writeln!(f, "    .--.        _")?;
+        writeln!(f, "   |o_o |      | |")?;
+        writeln!(f, "   |:_/ |      | |")?;
+        writeln!(f, "  //   \\ \\     |_|")?;
+        writeln!(f, " (|     | )     _")?;
+        writeln!(f, "/'\\_   _/`\\    (_)")?;
+        writeln!(f, "\\___)=(___/")?;
         Ok(())
     }
 }

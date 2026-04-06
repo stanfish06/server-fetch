@@ -1,7 +1,12 @@
 #ifndef BINDINGS_H
 #define BINDINGS_H
-#include <wtmpdb.h>
 #include <stdlib.h>
+
+#ifdef __APPLE__
+#include <utmpx.h>
+#else
+#include <wtmpdb.h>
+#endif
 
 // - Column 0: ID
 // - Column 1: Type
@@ -18,11 +23,11 @@ struct Entry {
     char *tty;
 };
 
-typedef struct wtmpdb_data {
+typedef struct login_data {
     int count;
     int capacity;
     struct Entry *entries;
-} wtmpdb_data;
+} login_data;
 
-void get_login_info(wtmpdb_data *data);
+void get_login_info(login_data *data);
 #endif
